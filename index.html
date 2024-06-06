@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editable Calendar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .calendar-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 150px; /* Add margin to account for the fixed header */
+        }
+        .year {
+            margin: 20px;
+            width: 100%;
+        }
+        .year h2 {
+            text-align: center;
+        }
+        .month-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+        .month-label {
+            width: 50px;
+            text-align: right;
+            padding-right: 10px;
+        }
+        .days-container {
+            display: flex;
+            flex: 1;
+            flex-wrap: nowrap;
+        }
+        .day {
+            border: 1px solid #ddd;
+            width: calc(100% / 31);
+            height: 30px;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+            line-height: 30px;
+            box-sizing: border-box;
+        }
+        .vacation {
+            background-color: blue;
+            color: white;
+        }
+        .transfer {
+            background-color: red;
+            color: white;
+        }
+        .cut {
+            background-color: yellow;
+            color: black;
+        }
+        .weekend {
+            background-color: lightblue;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 20px;
+            box-sizing: border-box;
+            background-color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #ddd;
+        }
+        .controls label {
+            font-size: 1.2em;
+        }
+        .controls input {
+            font-size: 1.2em;
+            padding: 5px;
+            width: 200px;
+            text-align: center;
+        }
+        .legend {
+            display: flex;
+            align-items: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-left: 20px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div>
+            <label for="date">Date</label>
+            <input type="date" id="date">
+        </div>
+        <div class="counter">
+            <label for="counter1">Vacation balance</label>
+            <input type="number" id="counter1" value="0">
+        </div>
+        <div class="counter">
+            <label for="counter2">Last year vacation balance</label>
+            <input type="number" id="counter2" value="0">
+        </div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: blue;"></div>
+                <span>Vacation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: red;"></div>
+                <span>Transfer</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: yellow;"></div>
+                <span>Cut</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: lightblue;"></div>
+                <span>Weekend</span>
+            </div>
+        </div>
+    </div>
+    <div class="calendar-container" id="calendar-container"></div>
+
+    <script>
+        const startYear = 2023;
+        const endYear = 2026;
+        const calendarContainer = document.getElementById('calendar-container');
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        for (let year = startYear; year <= endYear; year++) {
+            const yearDiv = document.createElement('div');
+            yearDiv.classList.add('year');
+            yearDiv.innerHTML = `<h2>${year}</h2>`;
+
+            months.forEach((month, monthIndex) => {
+                const monthRow = document.createElement('div');
+                monthRow.classList.add('month-row');
+                const monthLabel = document.createElement('div');
+                monthLabel.classList.add('month-label');
+                monthLabel.textContent = month;
+                monthRow.appendChild(monthLabel);
+
+                const daysContainer = document.createElement('div');
+                daysContainer.classList.add('days-container');
+                const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, monthIndex, day);
+                    const dayDiv = document.createElement('div');
+                    dayDiv.classList.add('day');
+                    if (date.getDay() === 0 || date.getDay() === 6) {
+                        dayDiv.classList.add('weekend');
+                    }
+                    dayDiv.textContent = day;
+                    dayDiv.dataset.date = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    dayDiv.addEventListener('click', () => editEvent(dayDiv));
+
+                    daysContainer.appendChild(dayDiv);
+                }
+
+                monthRow.appendChild(daysContainer);
+                yearDiv.appendChild(monthRow);
+            });
+
+            calendarContainer.appendChild(yearDiv);
+        }
+
+        function editEvent(dayDiv) {
+            const eventText = prompt('Enter event (e.g., "Vacation 4"):');
+            if (eventText) {
+                const [event, duration] = eventText.split(' ');
+                const isWeekend = dayDiv.classList.contains('weekend');
+                if (event.toLowerCase() === 'vacation' && duration) {
+                    const daysContainer = dayDiv.parentElement;
+                    const dayIndex = Array.from(daysContainer.children).indexOf(dayDiv);
+                    const vacationDays = parseInt(duration, 10);
+
+                    for (let i = 0; i < vacationDays; i++) {
+                        if (dayIndex + i < daysContainer.children.length) {
+                            const vacationDayDiv = daysContainer.children[dayIndex + i];
+                            vacationDayDiv.classList.add('vacation');
+                            vacationDayDiv.classList.remove('weekend');  // Remove weekend class to apply vacation color
+                        }
+                    }
+                } else {
+                    switch(event.toLowerCase()) {
+                        case 'transfer':
+                            dayDiv.classList.add('transfer');
+                            if (isWeekend) dayDiv.classList.remove('weekend');  // Remove weekend class to apply transfer color
+                            break;
+                        case 'cut':
+                            dayDiv.classList.add('cut');
+                            if (isWeekend) dayDiv.classList.remove('weekend');  // Remove weekend class to apply cut color
+                            break;
+                        default:
+                            alert('Invalid event type. Use "Vacation", "Transfer", or "Cut".');
+                            break;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
